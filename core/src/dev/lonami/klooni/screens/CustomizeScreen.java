@@ -20,6 +20,7 @@ package dev.lonami.klooni.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -146,6 +147,25 @@ class CustomizeScreen implements Screen {
             }
         });
         optionsGroup.addActor(snapButton);
+
+        // Board size
+        final SoftButton boardSizeButton = new SoftButton(3, "issues_texture");
+        boardSizeButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                Preferences prefs = Gdx.app.getPreferences("dev.lonami.klooni.game");
+                int currentBoardSize = prefs.getInteger("board_size", 10);
+                if (currentBoardSize>=15){
+                    prefs.putInteger("board_size", 10).flush();
+                }
+                else{
+                    currentBoardSize+=1;
+                    prefs.putInteger("board_size", currentBoardSize).flush();
+                }
+                buyBand.setTempText("current board size " + (prefs.getInteger("board_size", 10)));
+            }
+        });
+        optionsGroup.addActor(boardSizeButton);
 
         // Issues
         final SoftButton issuesButton = new SoftButton(3, "issues_texture");

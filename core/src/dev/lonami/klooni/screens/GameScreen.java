@@ -25,6 +25,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.Preferences;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -51,6 +52,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
     private final BaseScorer scorer;
     private final BonusParticleHandler bonusParticleHandler;
 
+    private static Preferences prefs;
     private final Board board;
     private final PieceHolder holder;
 
@@ -74,8 +76,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
     //endregion
 
     //region Static members
-
-    private final static int BOARD_SIZE = 10;
+//    private final static int BOARD_SIZE = 10;
     private final static int HOLDER_PIECE_COUNT = 3;
 
     final static int GAME_MODE_SCORE = 0;
@@ -109,7 +110,9 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
                 throw new RuntimeException("Unknown game mode given: " + gameMode);
         }
 
-        board = new Board(layout, BOARD_SIZE);
+        prefs = Gdx.app.getPreferences("dev.lonami.klooni.game");
+        int boardSize = prefs.getInteger("board_size", 10);
+        board = new Board(layout, boardSize);
         holder = new PieceHolder(layout, board, HOLDER_PIECE_COUNT, board.cellSize);
         pauseMenu = new PauseMenuStage(layout, game, scorer, gameMode);
         bonusParticleHandler = new BonusParticleHandler(game);
