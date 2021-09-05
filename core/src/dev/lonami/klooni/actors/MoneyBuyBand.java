@@ -17,6 +17,7 @@
 */
 package dev.lonami.klooni.actors;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -26,6 +27,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.TimeUtils;
+import com.badlogic.gdx.Preferences;
 
 import dev.lonami.klooni.Klooni;
 import dev.lonami.klooni.Theme;
@@ -35,7 +37,7 @@ public class MoneyBuyBand extends Table {
     //region Members
 
     private final Label infoLabel;
-    private final SoftButton confirmButton, cancelButton;
+    private final SoftButton confirmButton, cancelButton, cheatButton;
 
     private String infoText;
     private boolean showingTemp;
@@ -97,6 +99,20 @@ public class MoneyBuyBand extends Table {
         add(cancelButton).pad(8, 4, 8, 8);
         cancelButton.setVisible(false);
 
+        cheatButton = new SoftButton(3, "cancel_texture");
+        cheatButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                Preferences prefs = Gdx.app.getPreferences("dev.lonami.klooni.game");
+                float currentMoney = prefs.getFloat("money");
+                prefs.putFloat("money", currentMoney+5).flush();
+                actor.setVisible(false);
+                showCurrentMoney();
+            }
+        });
+        add(cheatButton).pad(8, 8, 8, 12);
+        cheatButton.setVisible(false);
+
         setBackground(new TextureRegionDrawable(new TextureRegion(Theme.getBlankTexture())));
         showCurrentMoney();
     }
@@ -112,6 +128,7 @@ public class MoneyBuyBand extends Table {
     private void hideBuyButtons() {
         confirmButton.setVisible(false);
         cancelButton.setVisible(false);
+        cheatButton.setVisible(false);
         toBuy = null;
     }
 
@@ -168,6 +185,8 @@ public class MoneyBuyBand extends Table {
         }
     }
 
+    // Method to stack money by doubleclick omg hack lol
+
     //endregion
 
     //region Public methods
@@ -179,6 +198,7 @@ public class MoneyBuyBand extends Table {
             setTempText("cannot buy!");
             confirmButton.setVisible(false);
             cancelButton.setVisible(false);
+            cheatButton.setVisible(true);
         } else {
             this.toBuy = toBuy;
             setText("confirm?");
