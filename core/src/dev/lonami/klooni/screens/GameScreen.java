@@ -30,7 +30,6 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import java.io.ByteArrayInputStream;
@@ -41,6 +40,7 @@ import java.io.IOException;
 
 import dev.lonami.klooni.Klooni;
 import dev.lonami.klooni.SkinLoader;
+import dev.lonami.klooni.actors.SoftButton;
 import dev.lonami.klooni.game.BaseScorer;
 import dev.lonami.klooni.game.Board;
 import dev.lonami.klooni.game.BonusParticleHandler;
@@ -49,6 +49,8 @@ import dev.lonami.klooni.game.Piece;
 import dev.lonami.klooni.game.PieceHolder;
 import dev.lonami.klooni.game.Scorer;
 import dev.lonami.klooni.game.TimeScorer;
+import dev.lonami.klooni.game.UndoButtonManager;
+import dev.lonami.klooni.game.UndoStateManager;
 import dev.lonami.klooni.serializer.BinSerializable;
 import dev.lonami.klooni.serializer.BinSerializer;
 
@@ -69,7 +71,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
     private final GameLayout layout;
     private final Stage stage;
-    private final ImageButton undoButton;
+    private final SoftButton undoButton;
 
     private final PauseMenuStage pauseMenu;
 
@@ -118,12 +120,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         stage = new Stage(new ScreenViewport());
 
         // Create and configure undo button with proper styling
-        final ImageButton.ImageButtonStyle undoStyle = new ImageButton.ImageButtonStyle();
-        undoStyle.up = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("replay.png")));
-        undoStyle.down = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("button_down.png")));
-        undoStyle.disabled = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("button_up.png")));
-
-        undoButton = new ImageButton(undoStyle);
+        undoButton = new SoftButton(0, "replay_texture");
         undoButton.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
@@ -148,7 +145,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         bonusParticleHandler = new BonusParticleHandler(game);
 
         // Position the button using GameLayout system and add to stage
-        layout.updateUndoButton(undoButton);
+        layout.updateUndoButton(undoButton, scorer);
         stage.addActor(undoButton);
 
         gameOverSound = Gdx.audio.newSound(Gdx.files.internal("sound/game_over.mp3"));

@@ -103,17 +103,18 @@ public class GameLayout {
         undoButton.setBounds(screenWidth - marginWidth - buttonWidth, pieceHolderHeight + boardHeight, buttonWidth, buttonHeight);
     }
 
-    // Public method to update ImageButton (undo button) layout - accessible from GameScreen
-    public void updateUndoButton(ImageButton undoButton) {
-        float buttonWidth = availableWidth * 0.15f;
-        float buttonHeight = scoreHeight;
+    // Public method to update undo button (SoftButton) layout - accessible from GameScreen
+    public void updateUndoButton(SoftButton undoButton, BaseScorer scorer) {
+        // Make button square and place it above the cup icon
+        float buttonSize = scoreHeight * 0.6f; // Square button, 60% of score area height
+        float cupSize = Math.min(scoreHeight, scorer.cupTexture.getHeight());
 
-        // Position the button in the same area as the scorer, at the far right
-        undoButton.setBounds(
-                screenWidth - marginWidth - buttonWidth,
-                pieceHolderHeight + boardHeight,
-                buttonWidth,
-                buttonHeight);
+        // Position above the cup area
+        float cupX = marginWidth + availableWidth * 0.5f - cupSize * 0.5f;
+        float buttonX = cupX + (cupSize - buttonSize) * 0.5f; // Center above cup
+        float buttonY = pieceHolderHeight + boardHeight + scoreHeight + marginWidth * 0.5f;
+
+        undoButton.setBounds(buttonX, buttonY, buttonSize, buttonSize);
     }
 
     // Special case, we want to position the label on top of the cup
