@@ -116,6 +116,9 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         this.game = game;
         this.gameMode = gameMode;
 
+        // Изначально кнопка undo недоступна
+        undoAvailable = false;
+
         layout = new GameLayout();
         stage = new Stage(new ScreenViewport());
 
@@ -148,6 +151,9 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         layout.updateUndoButton(undoButton, scorer);
         stage.addActor(undoButton);
 
+        // Изначально кнопка скрыта
+        undoButton.setVisible(undoAvailable);
+
         gameOverSound = Gdx.audio.newSound(Gdx.files.internal("sound/game_over.mp3"));
 
         if (gameMode == GAME_MODE_SCORE) {
@@ -172,7 +178,8 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
             final ByteArrayOutputStream out = new ByteArrayOutputStream();
             write(new DataOutputStream(out));
             undoState = out.toByteArray();
-            undoAvailable = true;
+            // НЕ устанавливаем undoAvailable = true здесь
+            // Кнопка станет доступной только после размещения фигурки на поле
         } catch (IOException e) {
             // This should not happen
         }
@@ -284,7 +291,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
         batch.end();
 
-        undoButton.setDisabled(!undoAvailable);
+        undoButton.setVisible(undoAvailable);
         stage.act(delta);
         stage.draw();
 
@@ -316,10 +323,11 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         boolean piecePickedUp = holder.pickPiece();
 
-        // Сохраняем состояние сразу при захвате фигуры,
-        // чтобы можно было откатиться к состоянию до её размещения
+        // При захвате новой фигурки кнопка undo становится недоступной,
+        // так как начинается новый ход и предыдущий уже нельзя отменить
         if (piecePickedUp) {
-            saveStateForUndo();
+            undoAvailable = false; // Скрываем кнопку undo
+            saveStateForUndo(); // Сохраняем состояние для нового возможного отката
         }
 
         return piecePickedUp;
@@ -332,7 +340,9 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
             return false;
 
         if (result.onBoard) {
-            // Убираем saveStateForUndo() отсюда - теперь сохранение происходит при захвате
+            // Фигурка успешно размещена на поле - кнопка undo становится доступной
+            undoAvailable = true;
+
             scorer.addPieceScore(result.area);
             int bonus = scorer.addBoardScore(board.clearComplete(game.effect), board.cellCount);
             if (bonus > 0) {

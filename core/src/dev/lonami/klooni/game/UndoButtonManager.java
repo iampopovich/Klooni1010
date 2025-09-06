@@ -86,7 +86,7 @@ public class UndoButtonManager implements BinSerializable {
     //region Private methods
 
     private void updateButtonState() {
-        undoButton.setDisabled(!undoAvailable);
+        undoButton.setVisible(undoAvailable);
     }
 
     //endregion
