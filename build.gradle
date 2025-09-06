@@ -19,7 +19,7 @@ buildscript {
 allprojects {
     apply plugin: "eclipse"
 
-    version = '0.8.6'
+    version = '0.9.0'
     ext {
         appName = "1010! Klooni"
         gdxVersion = '1.9.10'

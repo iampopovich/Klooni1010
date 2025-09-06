@@ -22,8 +22,8 @@ android {
         //noinspection MinSdkTooLow
         minSdkVersion 8
         targetSdkVersion 34
-        versionCode 860
-        versionName "0.8.6"
+        versionCode 900
+        versionName "0.9.0"
     }
     buildTypes {
         release {
