@@ -30,6 +30,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import java.io.ByteArrayInputStream;
@@ -40,7 +41,6 @@ import java.io.IOException;
 
 import dev.lonami.klooni.Klooni;
 import dev.lonami.klooni.SkinLoader;
-import dev.lonami.klooni.actors.SoftButton;
 import dev.lonami.klooni.game.BaseScorer;
 import dev.lonami.klooni.game.Board;
 import dev.lonami.klooni.game.BonusParticleHandler;
@@ -69,7 +69,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
     private final GameLayout layout;
     private final Stage stage;
-    private final SoftButton undoButton;
+    private final ImageButton undoButton;
 
     private final PauseMenuStage pauseMenu;
 
@@ -117,20 +117,19 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         layout = new GameLayout();
         stage = new Stage(new ScreenViewport());
 
-        final SoftButton.ImageStyle undoStyle = new SoftButton.ImageStyle();
-        undoStyle.imageUp = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("undo.png")));
-        undoStyle.imageDown = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("undo_down.png")));
-        undoStyle.imageDisabled = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("undo_disabled.png")));
+        // Create and configure undo button with proper styling
+        final ImageButton.ImageButtonStyle undoStyle = new ImageButton.ImageButtonStyle();
+        undoStyle.up = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("replay.png")));
+        undoStyle.down = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("button_down.png")));
+        undoStyle.disabled = new TextureRegionDrawable(new TextureRegion(SkinLoader.loadPng("button_up.png")));
 
-        undoButton = new SoftButton(undoStyle);
+        undoButton = new ImageButton(undoStyle);
         undoButton.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 performUndo();
             }
         });
-        stage.addActor(undoButton);
-        layout.update(undoButton); // Initial position
 
         switch (gameMode) {
             case GAME_MODE_SCORE:
@@ -147,6 +146,10 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         holder = new PieceHolder(layout, board, HOLDER_PIECE_COUNT, board.cellSize);
         pauseMenu = new PauseMenuStage(layout, game, scorer, gameMode);
         bonusParticleHandler = new BonusParticleHandler(game);
+
+        // Position the button using GameLayout system and add to stage
+        layout.updateUndoButton(undoButton);
+        stage.addActor(undoButton);
 
         gameOverSound = Gdx.audio.newSound(Gdx.files.internal("sound/game_over.mp3"));
 
@@ -185,14 +188,34 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         try {
             read(new DataInputStream(new ByteArrayInputStream(undoState)));
             undoAvailable = false;
+
+            // После восстановления состояния нужно полностью обновить все компоненты
+            refreshGameStateAfterUndo();
+
         } catch (IOException e) {
             // This should not happen
+            e.printStackTrace();
         }
     }
 
     //endregion
 
     //region Private methods
+
+    private void refreshGameStateAfterUndo() {
+        // Сбрасываем состояние holder'а - отменяем любое удержание фигур
+        holder.enabled = true;
+
+        // Обновляем layout для всех компонентов через публичные методы
+        board.updateLayout(layout);
+        holder.updateLayout(layout);
+
+        // Принудительно обновляем визуальное состояние
+        holder.update();
+
+        // Проверяем, не закончилась ли игра после отмены хода
+        gameOverDone = isGameOver();
+    }
 
     // If no piece can be put, then it is considered to be game over
     private boolean isGameOver() {
@@ -294,7 +317,15 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        return holder.pickPiece();
+        boolean piecePickedUp = holder.pickPiece();
+
+        // Сохраняем состояние сразу при захвате фигуры,
+        // чтобы можно было откатиться к состоянию до её размещения
+        if (piecePickedUp) {
+            saveStateForUndo();
+        }
+
+        return piecePickedUp;
     }
 
     @Override
@@ -304,7 +335,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
             return false;
 
         if (result.onBoard) {
-            saveStateForUndo();
+            // Убираем saveStateForUndo() отсюда - теперь сохранение происходит при захвате
             scorer.addPieceScore(result.area);
             int bonus = scorer.addBoardScore(board.clearComplete(game.effect), board.cellCount);
             if (bonus > 0) {
@@ -329,7 +360,6 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
     @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
-        layout.update(undoButton);
     }
 
     @Override

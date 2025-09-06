@@ -46,6 +46,32 @@ Building the project should be very straight forward:
    1. Desktop build is under `desktop/build/libs/*.jar`
    2. Android build is under `android/build/outputs/apk/*.apk`
 
+Android Development
+-------------------
+For Android development, the project includes several convenient Gradle tasks:
+
+### Prerequisites
+- Android SDK installed (set via `ANDROID_HOME` environment variable or `local.properties`)
+- USB debugging enabled on your Android device or emulator running
+
+### Available Android Tasks
+- `./gradlew android:assembleDebug` - Build debug APK
+- `./gradlew android:assembleRelease` - Build release APK
+- `./gradlew android:installDebug` - Build and install debug APK to connected device
+- `./gradlew android:installRelease` - Build and install release APK to connected device
+- `./gradlew android:runDebug` - Build, install and launch debug version
+- `./gradlew android:runRelease` - Build, install and launch release version
+- `./gradlew android:run` - Launch already installed app on device
+- `./gradlew android:uninstall` - Remove app from device
+- `./gradlew android:listDevices` - List connected Android devices
+
+### Quick Start for Android Development
+1. Connect your Android device via USB with USB debugging enabled, or start an Android emulator
+2. Run `./gradlew android:listDevices` to verify your device is connected
+3. Run `./gradlew android:runDebug` to build, install and launch the game
+
+The debug build includes debugging capabilities and uses a different package name (`dev.lonami.klooni.debug`) so it can be installed alongside the release version.
+
 Playing
 -------
 If you're on desktop, you should be able to play the game by either double

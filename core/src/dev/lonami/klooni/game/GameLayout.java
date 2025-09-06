@@ -20,6 +20,7 @@ package dev.lonami.klooni.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 
 import dev.lonami.klooni.actors.Band;
@@ -100,6 +101,19 @@ public class GameLayout {
         float buttonWidth = availableWidth * 0.15f;
         float buttonHeight = scoreHeight;
         undoButton.setBounds(screenWidth - marginWidth - buttonWidth, pieceHolderHeight + boardHeight, buttonWidth, buttonHeight);
+    }
+
+    // Public method to update ImageButton (undo button) layout - accessible from GameScreen
+    public void updateUndoButton(ImageButton undoButton) {
+        float buttonWidth = availableWidth * 0.15f;
+        float buttonHeight = scoreHeight;
+
+        // Position the button in the same area as the scorer, at the far right
+        undoButton.setBounds(
+                screenWidth - marginWidth - buttonWidth,
+                pieceHolderHeight + boardHeight,
+                buttonWidth,
+                buttonHeight);
     }
 
     // Special case, we want to position the label on top of the cup

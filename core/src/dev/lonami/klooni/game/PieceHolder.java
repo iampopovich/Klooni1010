@@ -97,6 +97,15 @@ public class PieceHolder implements BinSerializable {
 
     //endregion
 
+    //region Public methods
+
+    // Public method to update layout - delegates to GameLayout package-private method
+    public void updateLayout(GameLayout layout) {
+        layout.update(this);
+    }
+
+    //endregion
+
     //region Private methods
 
     // Determines whether all the pieces have been put (and the "hand" is finished)
