@@ -24,6 +24,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 
 import dev.lonami.klooni.actors.Band;
 import dev.lonami.klooni.actors.ShopCard;
+import dev.lonami.klooni.actors.SoftButton;
 
 // Helper class to calculate the size of each element
 //
@@ -88,9 +89,17 @@ public class GameLayout {
                 area.x, area.y,
                 area.width * 0.5f - cupSize * 0.5f, area.height);
 
+        // Make some room for the undo button
+        float buttonWidth = availableWidth * 0.15f;
         scorer.highScoreLabel.setBounds(
                 area.x + area.width * 0.5f + cupSize * 0.5f, area.y,
-                area.width * 0.5f - cupSize * 0.5f, area.height);
+                area.width * 0.5f - cupSize * 0.5f - buttonWidth, area.height);
+    }
+
+    void update(SoftButton undoButton) {
+        float buttonWidth = availableWidth * 0.15f;
+        float buttonHeight = scoreHeight;
+        undoButton.setBounds(screenWidth - marginWidth - buttonWidth, pieceHolderHeight + boardHeight, buttonWidth, buttonHeight);
     }
 
     // Special case, we want to position the label on top of the cup
