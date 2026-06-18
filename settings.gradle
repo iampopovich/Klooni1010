@@ -1,1 +1,4 @@
-include 'desktop', 'android', 'ios', 'html', 'core'
+include 'desktop', 'android', 'ios', 'core'
+// html module temporarily disabled due to gwt-gradle-plugin compatibility issues
+// include 'html'
+

@@ -122,6 +122,11 @@ public class Board implements BinSerializable {
 
     //region Public methods
 
+    // Public method to update layout - delegates to GameLayout package-private method
+    public void updateLayout(GameLayout layout) {
+        layout.update(this);
+    }
+
     public void draw(final Batch batch) {
         batch.setTransformMatrix(batch.getTransformMatrix().translate(pos.x, pos.y, 0));
 

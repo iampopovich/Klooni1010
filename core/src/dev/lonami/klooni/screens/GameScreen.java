@@ -19,18 +19,28 @@ package dev.lonami.klooni.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 import dev.lonami.klooni.Klooni;
+import dev.lonami.klooni.SkinLoader;
+import dev.lonami.klooni.actors.SoftButton;
 import dev.lonami.klooni.game.BaseScorer;
 import dev.lonami.klooni.game.Board;
 import dev.lonami.klooni.game.BonusParticleHandler;
@@ -39,6 +49,8 @@ import dev.lonami.klooni.game.Piece;
 import dev.lonami.klooni.game.PieceHolder;
 import dev.lonami.klooni.game.Scorer;
 import dev.lonami.klooni.game.TimeScorer;
+import dev.lonami.klooni.game.UndoButtonManager;
+import dev.lonami.klooni.game.UndoStateManager;
 import dev.lonami.klooni.serializer.BinSerializable;
 import dev.lonami.klooni.serializer.BinSerializer;
 
@@ -57,6 +69,10 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
     private final SpriteBatch batch;
     private final Sound gameOverSound;
 
+    private final GameLayout layout;
+    private final Stage stage;
+    private final SoftButton undoButton;
+
     private final PauseMenuStage pauseMenu;
 
     // TODO Perhaps make an abstract base class for the game screen and game modes
@@ -70,6 +86,9 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
     // but rather subtract it from the current score and then update it
     // with the current score to get the "increase" of money score.
     private int savedMoneyScore;
+
+    private byte[] undoState;
+    private boolean undoAvailable;
 
     //endregion
 
@@ -97,7 +116,21 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         this.game = game;
         this.gameMode = gameMode;
 
-        final GameLayout layout = new GameLayout();
+        // Изначально кнопка undo недоступна
+        undoAvailable = false;
+
+        layout = new GameLayout();
+        stage = new Stage(new ScreenViewport());
+
+        // Create and configure undo button with proper styling
+        undoButton = new SoftButton(0, "replay_texture");
+        undoButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                performUndo();
+            }
+        });
+
         switch (gameMode) {
             case GAME_MODE_SCORE:
                 scorer = new Scorer(game, layout);
@@ -114,6 +147,13 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         pauseMenu = new PauseMenuStage(layout, game, scorer, gameMode);
         bonusParticleHandler = new BonusParticleHandler(game);
 
+        // Position the button using GameLayout system and add to stage
+        layout.updateUndoButton(undoButton, scorer);
+        stage.addActor(undoButton);
+
+        // Изначально кнопка скрыта
+        undoButton.setVisible(undoAvailable);
+
         gameOverSound = Gdx.audio.newSound(Gdx.files.internal("sound/game_over.mp3"));
 
         if (gameMode == GAME_MODE_SCORE) {
@@ -129,9 +169,57 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         }
     }
 
+    private void saveStateForUndo() {
+        // We can't save the state if the game is over
+        if (gameOverDone)
+            return;
+
+        try {
+            final ByteArrayOutputStream out = new ByteArrayOutputStream();
+            write(new DataOutputStream(out));
+            undoState = out.toByteArray();
+            // НЕ устанавливаем undoAvailable = true здесь
+            // Кнопка станет доступной только после размещения фигурки на поле
+        } catch (IOException e) {
+            // This should not happen
+        }
+    }
+
+    private void performUndo() {
+        if (!undoAvailable)
+            return;
+
+        try {
+            read(new DataInputStream(new ByteArrayInputStream(undoState)));
+            undoAvailable = false;
+
+            // После восстановления состояния нужно полностью обновить все компоненты
+            refreshGameStateAfterUndo();
+
+        } catch (IOException e) {
+            // This should not happen
+            e.printStackTrace();
+        }
+    }
+
     //endregion
 
     //region Private methods
+
+    private void refreshGameStateAfterUndo() {
+        // Сбрасываем состояние holder'а - отменяем любое удержание фигур
+        holder.enabled = true;
+
+        // Обновляем layout для всех компонентов через публичные методы
+        board.updateLayout(layout);
+        holder.updateLayout(layout);
+
+        // Принудительно обновляем визуальное состояние
+        holder.update();
+
+        // Проверяем, не закончилась ли игра после отмены хода
+        gameOverDone = isGameOver();
+    }
 
     // If no piece can be put, then it is considered to be game over
     private boolean isGameOver() {
@@ -167,7 +255,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
         if (pauseMenu.isShown()) // Will happen if we go to the customize menu
             Gdx.input.setInputProcessor(pauseMenu);
         else
-            Gdx.input.setInputProcessor(this);
+            Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     // Save the state, the user might leave the game in any of the following 2 methods
@@ -203,6 +291,10 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
         batch.end();
 
+        undoButton.setVisible(undoAvailable);
+        stage.act(delta);
+        stage.draw();
+
         if (pauseMenu.isShown() || pauseMenu.isHiding()) {
             pauseMenu.act(delta);
             pauseMenu.draw();
@@ -211,6 +303,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
     @Override
     public void dispose() {
+        stage.dispose();
         pauseMenu.dispose();
     }
 
@@ -228,7 +321,16 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        return holder.pickPiece();
+        boolean piecePickedUp = holder.pickPiece();
+
+        // При захвате новой фигурки кнопка undo становится недоступной,
+        // так как начинается новый ход и предыдущий уже нельзя отменить
+        if (piecePickedUp) {
+            undoAvailable = false; // Скрываем кнопку undo
+            saveStateForUndo(); // Сохраняем состояние для нового возможного отката
+        }
+
+        return piecePickedUp;
     }
 
     @Override
@@ -238,6 +340,9 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
             return false;
 
         if (result.onBoard) {
+            // Фигурка успешно размещена на поле - кнопка undo становится доступной
+            undoAvailable = true;
+
             scorer.addPieceScore(result.area);
             int bonus = scorer.addBoardScore(board.clearComplete(game.effect), board.cellCount);
             if (bonus > 0) {
@@ -261,6 +366,7 @@ class GameScreen implements Screen, InputProcessor, BinSerializable {
 
     @Override
     public void resize(int width, int height) {
+        stage.getViewport().update(width, height, true);
     }
 
     @Override

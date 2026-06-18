@@ -20,10 +20,12 @@ package dev.lonami.klooni.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 
 import dev.lonami.klooni.actors.Band;
 import dev.lonami.klooni.actors.ShopCard;
+import dev.lonami.klooni.actors.SoftButton;
 
 // Helper class to calculate the size of each element
 //
@@ -88,9 +90,31 @@ public class GameLayout {
                 area.x, area.y,
                 area.width * 0.5f - cupSize * 0.5f, area.height);
 
+        // Make some room for the undo button
+        float buttonWidth = availableWidth * 0.15f;
         scorer.highScoreLabel.setBounds(
                 area.x + area.width * 0.5f + cupSize * 0.5f, area.y,
-                area.width * 0.5f - cupSize * 0.5f, area.height);
+                area.width * 0.5f - cupSize * 0.5f - buttonWidth, area.height);
+    }
+
+    void update(SoftButton undoButton) {
+        float buttonWidth = availableWidth * 0.15f;
+        float buttonHeight = scoreHeight;
+        undoButton.setBounds(screenWidth - marginWidth - buttonWidth, pieceHolderHeight + boardHeight, buttonWidth, buttonHeight);
+    }
+
+    // Public method to update undo button (SoftButton) layout - accessible from GameScreen
+    public void updateUndoButton(SoftButton undoButton, BaseScorer scorer) {
+        // Make button square and place it above the cup icon
+        float buttonSize = scoreHeight * 0.6f; // Square button, 60% of score area height
+        float cupSize = Math.min(scoreHeight, scorer.cupTexture.getHeight());
+
+        // Position above the cup area
+        float cupX = marginWidth + availableWidth * 0.5f - cupSize * 0.5f;
+        float buttonX = cupX + (cupSize - buttonSize) * 0.5f; // Center above cup
+        float buttonY = pieceHolderHeight + boardHeight + scoreHeight + marginWidth * 0.5f;
+
+        undoButton.setBounds(buttonX, buttonY, buttonSize, buttonSize);
     }
 
     // Special case, we want to position the label on top of the cup
